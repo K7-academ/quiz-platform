@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { HashRouter as Router, Routes, Route, useParams, Link } from 'react-router-dom';
-import { quizzesData } from './quizzes';
+import { quizzes } from './data/quizzes';
+const quizzesData = quizzes;
 
 // Компонент самого тесту
 function Quiz({ data }) {
