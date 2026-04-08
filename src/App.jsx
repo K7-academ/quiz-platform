@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { HashRouter as Router, Routes, Route, useParams, Link } from 'react-router-dom';
 import { quizzes } from './quizzes';
+
 const quizzesData = quizzes;
 
-// Компонент самого тесту
 function Quiz({ data }) {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [score, setScore] = useState(0);
@@ -25,7 +25,7 @@ function Quiz({ data }) {
     return (
       <div className="score-section">
         <h2>Результат: {score} з {data.questions.length}</h2>
-        <Link title="На головну" to="/" className="counter">Повернутися до вибору тем</Link>
+        <Link to="/" className="counter">Повернутися до вибору тем</Link>
       </div>
     );
   }
@@ -33,7 +33,7 @@ function Quiz({ data }) {
   return (
     <div className="quiz-section">
       <h1>{data.title}</h1>
-      <div className="question-count">Питання {currentQuestion + 1} / {data.questions.length}</div>
+      <div className="status">Питання {currentQuestion + 1} / {data.questions.length}</div>
       <div className="question-text">{data.questions[currentQuestion].question}</div>
       <div className="answer-options">
         {data.questions[currentQuestion].options.map((option) => (
@@ -44,14 +44,13 @@ function Quiz({ data }) {
   );
 }
 
-// Сторінка вибору тесту
 function Home() {
   return (
     <div className="home-section">
       <h1>Оберіть тему тестування</h1>
       <div className="quiz-list">
         {Object.keys(quizzesData).map((id) => (
-          <Link key={id} to={`/${id}`} className="counter" style={{display: 'block', margin: '10px auto', width: '200px'}}>
+          <Link key={id} to={`/${id}`} className="counter" style={{display: 'block', margin: '10px auto', width: '250px', textAlign: 'center'}}>
             {quizzesData[id].title}
           </Link>
         ))}
@@ -60,21 +59,21 @@ function Home() {
   );
 }
 
-// Сторінка-обробник маршруту
 function QuizPage() {
   const { quizId } = useParams();
   const quiz = quizzesData[quizId];
   return quiz ? <Quiz data={quiz} /> : <h2>Тест не знайдено</h2>;
 }
 
-// Головний компонент з роутингом
 export default function App() {
   return (
     <Router>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/:quizId" element={<QuizPage />} />
-      </Routes>
+      <div className="app-container">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/:quizId" element={<QuizPage />} />
+        </Routes>
+      </div>
     </Router>
   );
 }
