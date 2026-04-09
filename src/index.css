@@ -67,3 +67,29 @@ button:hover, .counter:hover {
   background: var(--accent-bg);
   border: 1px solid var(--accent);
 }
+
+.timer {
+  font-weight: bold;
+  padding: 10px 20px;
+  background: #333; /* Темний фон замість світлого */
+  color: var(--accent); /* Фіолетовий акцент */
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  margin-bottom: 20px;
+  display: inline-block;
+  font-family: monospace; /* Моноширинний шрифт, щоб цифри не "стрибали" */
+  font-size: 1.2rem;
+}
+
+.timer.danger {
+  color: white;
+  background: #ff4d4d;
+  border-color: #ff0000;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
