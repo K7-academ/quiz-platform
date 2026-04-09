@@ -33,7 +33,7 @@ function Quiz({ data }) {
   return (
     <div className="quiz-section">
       <h1>{data.title}</h1>
-      <div className="status">Питання {currentQuestion + 1} / {data.questions.length}</div>
+      <div className="status"> Питання {currentQuestion + 1} / {data.questions.length}</div>
       <div className="question-text">{data.questions[currentQuestion].question}</div>
       <div className="answer-options">
         {data.questions[currentQuestion].options.map((option) => (
