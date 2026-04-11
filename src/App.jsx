@@ -105,7 +105,7 @@ export default function App() {
     <Router>
       <div className="app-container" style={{ 
           /* Прибираємо крапку, щоб звертатися від кореня сервера */
-          backgroundImage: "url('./background.svg')", 
+          backgroundImage: "url('./background.png')", 
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundAttachment: 'fixed',
