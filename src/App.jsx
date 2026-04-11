@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'; // Об'єднали імпорти
 import { HashRouter as Router, Routes, Route, useParams, Link } from 'react-router-dom';
 import { quizzes } from './quizzes';
+import './App.css';
 
 const quizzesData = quizzes;
 
@@ -102,7 +103,17 @@ function QuizPage() {
 export default function App() {
   return (
     <Router>
-      <div className="app-container">
+      <div className="app-container" style={{ 
+          /* Прибираємо крапку, щоб звертатися від кореня сервера */
+          backgroundImage: "url('/background.png')", 
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundAttachment: 'fixed',
+          minHeight: '100vh',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center'
+      }}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/:quizId" element={<QuizPage />} />
