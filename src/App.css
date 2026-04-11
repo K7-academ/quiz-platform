@@ -3,11 +3,16 @@
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  /* Додаємо ваш SVG та колір-заглушку на випадок затримки завантаження */
-  background: #242424 url('/background.svg') no-repeat center center fixed;
-  background-size: cover;
   color: white;
   font-family: sans-serif;
+
+  /* Розгорнуті властивості фону */
+  background-color: #242424;
+  background-image: url('/background.svg'); 
+  background-repeat: no-repeat;
+  background-position: center;
+  background-attachment: fixed;
+  background-size: cover; /* Обов'язково після background-image */
 }
 
 .quiz-card, .result-card {
