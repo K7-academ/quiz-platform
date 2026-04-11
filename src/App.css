@@ -3,7 +3,9 @@
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background-color: #242424;
+  /* Додаємо ваш SVG та колір-заглушку на випадок затримки завантаження */
+  background: #242424 url('./assets/background.svg') no-repeat center center fixed;
+  background-size: cover;
   color: white;
   font-family: sans-serif;
 }
