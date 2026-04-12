@@ -121,7 +121,7 @@ function Home() {
       const lastAttempt = localStorage.getItem('last_attempt_time');
       if (lastAttempt) {
         const diff = Date.now() - parseInt(lastAttempt, 10);
-        if (diff < 15 * 60 * 1000) {
+        if (diff < 15 * 60 * 1000) { // 15 хвилин
           setIsLocked(true);
         } else {
           setIsLocked(false);
@@ -134,28 +134,47 @@ function Home() {
     return () => clearInterval(interval);
   }, []);
 
-  return (
-    <div className="home-section" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
-      <h1>Оберіть тему тестування</h1>
+  // 1. ВАРІАНТ ДЛЯ ЗАБЛОКОВАНОГО ЕКРАНУ
+  // Повертаємо ТІЛЬКИ картку. app-container відцентрує її ідеально.
+  if (isLocked) {
+    return (
+      <div className="quiz-card" style={{ 
+        border: '1px solid #ff4d4d', 
+        padding: '40px', 
+        textAlign: 'center',
+        maxWidth: '500px',
+        width: '90%',
+        background: 'rgba(26, 26, 26, 0.95)', // Напівпрозорий темний фон
+        backdropFilter: 'blur(10px)',
+        borderRadius: '15px',
+        boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
+      }}>
+        <h2 style={{ color: '#ff4d4d', marginBottom: '15px' }}>Доступ обмежено</h2>
+        <p>Ви вже проходили тестування нещодавно.</p>
+        <p style={{ marginTop: '15px', opacity: 0.8, lineHeight: '1.5' }}>
+          Наступна спроба буде доступна через 15 хвилин після попередньої.<br/>
+          Будь ласка, зачекайте та повторіть матеріал.
+        </p>
+      </div>
+    );
+  }
 
-      {isLocked ? (
-        <div className="quiz-card" style={{ border: '1px solid #ff4d4d', padding: '40px', margin: '20px auto', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <h2 style={{ color: '#ff4d4d', marginBottom: '15px' }}>Доступ обмежено</h2>
-          <p style={{ textAlign: 'center' }}>Ви вже проходили тестування нещодавно.</p>
-          <p style={{ marginTop: '15px', opacity: 0.8, textAlign: 'center' }}>
-            Наступна спроба буде доступна через 15 хвилин після попередньої. 
-            Будь ласка, зачекайте та повторіть матеріал.
-          </p>
-        </div>
-      ) : (
-        <div className="quiz-list" style={{ width: '100%', textAlign: 'center' }}>
-          {Object.keys(quizzesData).map((id) => (
-            <Link key={id} to={`/${id}`} className="counter" style={{display: 'block', margin: '15px auto', width: '250px', textAlign: 'center'}}>
-              {quizzesData[id].title}
-            </Link>
-          ))}
-        </div>
-      )}
+  // 2. ВАРІАНТ ДЛЯ ВІДКРИТОГО ДОСТУПУ (Зі списком тем)
+  return (
+    <div className="home-section" style={{ textAlign: 'center', width: '100%' }}>
+      <h1>Оберіть тему тестування</h1>
+      <div className="quiz-list">
+        {Object.keys(quizzesData).map((id) => (
+          <Link 
+            key={id} 
+            to={`/${id}`} 
+            className="counter" 
+            style={{display: 'block', margin: '15px auto', width: '250px', textAlign: 'center'}}
+          >
+            {quizzesData[id].title}
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }
