@@ -7,11 +7,35 @@ import { v4 as uuidv4 } from 'uuid'; // Потрібно встановити: n
 const quizzesData = quizzes;
 
 function Quiz({ data }) {
+  // Додано новий стан для перемішаних питань
+  const [shuffledQuestions, setShuffledQuestions] = useState([]);
+  
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [score, setScore] = useState(0);
   const [showResult, setShowResult] = useState(false);
   const [timeLeft, setTimeLeft] = useState(data.timeLimit || 60);
   const [showHomeButton, setShowHomeButton] = useState(false); // Для затримки кнопки 20с
+
+  // Функція перемішування масиву (алгоритм Фішера-Єйтса)
+  const shuffleArray = (array) => {
+    const newArr = [...array];
+    for (let i = newArr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
+    }
+    return newArr;
+  };
+
+  // Ініціалізація: перемішуємо питання та відповіді при старті тесту
+  useEffect(() => {
+    if (data && data.questions) {
+      const randomizedQuestions = shuffleArray(data.questions).map(q => ({
+        ...q,
+        options: shuffleArray(q.options) // Перемішуємо варіанти для кожного питання
+      }));
+      setShuffledQuestions(randomizedQuestions);
+    }
+  }, [data]);
 
   // Таймер самого тесту
   useEffect(() => {
@@ -43,12 +67,13 @@ function Quiz({ data }) {
   }, [showResult]);
 
   const handleAnswer = (option) => {
-    if (option === data.questions[currentQuestion].answer) {
+    // Змінено звернення з data.questions на shuffledQuestions
+    if (option === shuffledQuestions[currentQuestion].answer) {
       setScore(score + 1);
     }
 
     const nextQuestion = currentQuestion + 1;
-    if (nextQuestion < data.questions.length) {
+    if (nextQuestion < shuffledQuestions.length) {
       setCurrentQuestion(nextQuestion);
     } else {
       setShowResult(true);
@@ -61,11 +86,16 @@ function Quiz({ data }) {
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
+  // Запобіжник: поки питання не перемішані, нічого не рендеримо (уникає помилок)
+  if (shuffledQuestions.length === 0) {
+    return <div style={{ textAlign: 'center', marginTop: '50px' }}>Підготовка тесту...</div>;
+  }
+
   if (showResult) {
-    const percentage = Math.round((score / data.questions.length) * 100);
+    const percentage = Math.round((score / shuffledQuestions.length) * 100);
     return (
       <div className="score-section result-card">
-        <h2>Результат: {score} з {data.questions.length}</h2>
+        <h2>Результат: {score} з {shuffledQuestions.length}</h2>
         <p>Ваша оцінка: {percentage}%</p>
         <p>{percentage >= 70 ? "✅ Тест складено!" : "❌ Спробуйте ще раз"}</p>
         
@@ -82,7 +112,8 @@ function Quiz({ data }) {
     );
   }
 
-  const question = data.questions[currentQuestion];
+  // Змінено звернення з data.questions на shuffledQuestions
+  const question = shuffledQuestions[currentQuestion];
 
   return (
     <div className="quiz-section">
@@ -91,7 +122,7 @@ function Quiz({ data }) {
       </div>
       <h1>{data.title}</h1>
       <div className="status">
-        Питання {currentQuestion + 1} / {data.questions.length}
+        Питання {currentQuestion + 1} / {shuffledQuestions.length}
       </div>
       <div className="question-text">{question.question}</div>
       <div className="answer-options">
