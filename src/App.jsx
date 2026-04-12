@@ -113,7 +113,7 @@ function Home() {
       const lastAttempt = localStorage.getItem('last_attempt_time');
       if (lastAttempt) {
         const diff = Date.now() - parseInt(lastAttempt);
-        const lockDuration = 15 * 60 * 1000; // 15 хвилин
+        const lockDuration = 15 * 60 * 1000; 
 
         if (diff < lockDuration) {
           setIsLocked(true);
@@ -124,32 +124,47 @@ function Home() {
     };
 
     checkLock();
-    // Перевіряємо рідше (раз на 10 секунд), оскільки нам не потрібна секундна точність для таймера
     const interval = setInterval(checkLock, 10000); 
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <div className="home-section">
+    <div className="home-section" style={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      alignItems: 'center', 
+      justifyContent: 'center',
+      width: '100%' 
+    }}>
       <h1>Оберіть тему тестування</h1>
 
       {isLocked ? (
-        <div className="quiz-card" style={{ border: '1px solid #ff4d4d', padding: '40px' }}>
-          <h2 style={{ color: '#ff4d4d' }}>Доступ обмежено</h2>
-          <p>Ви вже проходили тестування нещодавно.</p>
-          <p style={{ marginTop: '10px' }}>
+        /* Додаємо стилі центрування для картки блокування */
+        <div className="quiz-card" style={{ 
+          border: '1px solid #ff4d4d', 
+          padding: '40px',
+          margin: '20px auto', // Центрування по горизонталі
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '200px' // Гарантуємо об'єм картки
+        }}>
+          <h2 style={{ color: '#ff4d4d', marginBottom: '15px' }}>Доступ обмежено</h2>
+          <p style={{ textAlign: 'center' }}>Ви вже проходили тестування нещодавно.</p>
+          <p style={{ marginTop: '15px', opacity: 0.8, textAlign: 'center' }}>
             Наступна спроба буде доступна через 15 хвилин після попередньої. 
             Будь ласка, зачекайте та повторіть матеріал.
           </p>
         </div>
       ) : (
-        <div className="quiz-list">
+        <div className="quiz-list" style={{ width: '100%', textAlign: 'center' }}>
           {Object.keys(quizzesData).map((id) => (
             <Link 
               key={id} 
               to={`/${id}`} 
               className="counter" 
-              style={{display: 'block', margin: '10px auto', width: '250px', textAlign: 'center'}}
+              style={{display: 'block', margin: '15px auto', width: '250px', textAlign: 'center'}}
             >
               {quizzesData[id].title}
             </Link>
