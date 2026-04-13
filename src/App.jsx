@@ -14,7 +14,11 @@ function Quiz({ data }) {
   const [showResult, setShowResult] = useState(false);
   const [timeLeft, setTimeLeft] = useState(data.timeLimit || 60);
   const [showHomeButton, setShowHomeButton] = useState(false);
+  
+  // НОВИЙ СТАН: для збереження історії відповідей користувача
+  const [userAnswers, setUserAnswers] = useState([]);
 
+  // Функція перемішування (алгоритм Фішера-Єйтса)
   const shuffleArray = (array) => {
     const newArr = [...array];
     for (let i = newArr.length - 1; i > 0; i--) {
@@ -34,6 +38,7 @@ function Quiz({ data }) {
     }
   }, [data]);
 
+  // Таймер самого тесту
   useEffect(() => {
     if (showResult || timeLeft <= 0) {
       if (timeLeft === 0 && !showResult) setShowResult(true);
@@ -43,19 +48,32 @@ function Quiz({ data }) {
     return () => clearInterval(timer);
   }, [timeLeft, showResult]);
 
+  // Логіка блокування та появи кнопки
   useEffect(() => {
     if (showResult) {
-      // Записуємо час завершення
       localStorage.setItem('last_attempt_time', Date.now().toString());
       const buttonTimer = setTimeout(() => setShowHomeButton(true), 20000); 
       return () => clearTimeout(buttonTimer);
     }
   }, [showResult]);
 
+  // ОНОВЛЕНА ЛОГІКА ОБРОБКИ ВІДПОВІДІ
   const handleAnswer = (option) => {
-    if (option === shuffledQuestions[currentQuestion].answer) {
+    const currentQ = shuffledQuestions[currentQuestion];
+    const isCorrect = option === currentQ.answer;
+
+    if (isCorrect) {
       setScore(score + 1);
     }
+
+    // Записуємо вибір користувача в історію
+    setUserAnswers(prev => [...prev, {
+      questionText: currentQ.question,
+      userChoice: option,
+      correctAnswer: currentQ.answer,
+      isCorrect: isCorrect
+    }]);
+
     const nextQuestion = currentQuestion + 1;
     if (nextQuestion < shuffledQuestions.length) {
       setCurrentQuestion(nextQuestion);
@@ -74,18 +92,61 @@ function Quiz({ data }) {
     return <div style={{ textAlign: 'center', marginTop: '50px' }}>Підготовка тесту...</div>;
   }
 
+  // ОНОВЛЕНИЙ ЕКРАН РЕЗУЛЬТАТІВ
   if (showResult) {
     const percentage = Math.round((score / shuffledQuestions.length) * 100);
+    
+    // Фільтруємо лише неправильні відповіді
+    const incorrectAnswers = userAnswers.filter(ans => !ans.isCorrect);
+
     return (
-      <div className="score-section result-card">
+      <div className="score-section result-card" style={{ maxWidth: '600px', width: '100%' }}>
         <h2>Результат: {score} з {shuffledQuestions.length}</h2>
         <p>Ваша оцінка: {percentage}%</p>
         <p>{percentage >= 70 ? "✅ Тест складено!" : "❌ Спробуйте ще раз"}</p>
+        
+        {/* БЛОК АНАЛІЗУ ПОМИЛОК */}
+        {incorrectAnswers.length > 0 && (
+          <div style={{ 
+            marginTop: '20px', 
+            textAlign: 'left', 
+            background: 'rgba(0, 0, 0, 0.3)', 
+            padding: '15px', 
+            borderRadius: '10px',
+            maxHeight: '300px', // Обмеження висоти
+            overflowY: 'auto',  // Прокрутка, якщо помилок багато
+            border: '1px solid rgba(255, 77, 77, 0.3)'
+          }}>
+            <h3 style={{ color: '#ff4d4d', fontSize: '1.2rem', marginBottom: '15px', textAlign: 'center' }}>
+              Аналіз помилок
+            </h3>
+            <ul style={{ listStyleType: 'none', padding: 0, margin: 0 }}>
+              {incorrectAnswers.map((item, index) => (
+                <li key={index} style={{ marginBottom: '15px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px' }}>
+                  <p style={{ fontWeight: 'bold', fontSize: '0.95rem', marginBottom: '8px' }}>
+                    {index + 1}. {item.questionText}
+                  </p>
+                  <p style={{ color: '#ff4d4d', margin: '4px 0', fontSize: '0.9rem' }}>
+                    ❌ Ваша відповідь: {item.userChoice}
+                  </p>
+                  <p style={{ color: '#4caf50', margin: '4px 0', fontSize: '0.9rem' }}>
+                    ✅ Правильно: {item.correctAnswer}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {incorrectAnswers.length === 0 && percentage === 100 && (
+          <p style={{ color: '#4caf50', marginTop: '15px' }}>Бездоганна робота! Помилок немає.</p>
+        )}
+
         <hr style={{ margin: '20px 0', opacity: 0.2 }} />
+
         {showHomeButton ? (
           <Link to="/" className="counter">До вибору тем</Link>
         ) : (
-          <p style={{ fontStyle: 'italic', color: '#aaa' }}>
+          <p style={{ fontStyle: 'italic', color: '#aaa', fontSize: '0.9rem' }}>
             ⏳ Повернутися до вибору тем можна буде через 20 сек.
           </p>
         )}
