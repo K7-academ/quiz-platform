@@ -60,7 +60,7 @@ export const quizzes = {
         answer: "<h1>" 
       }
     ]
-  }
+  },
   "html-intro_1": {
     title: "Тема 1. Заняття 1.",
 	timeLimit: 180, // 3 хвилини на весь тест
@@ -91,7 +91,7 @@ export const quizzes = {
         answer: "<h1>" 
       }
     ]
-  }
+  },
   "html-intro_2": {
     title: "Тема 1. Заняття 2.",
 	timeLimit: 180, // 3 хвилини на весь тест
