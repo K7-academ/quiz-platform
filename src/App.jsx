@@ -326,7 +326,7 @@ function AdminReport() {
 
   const handleLogin = (e) => {
     e.preventDefault();
-    if (password === "admin777") { // ВСТАВТЕ СЮДИ ВАШ ПАРОЛЬ
+    if (password === "363741") { // ВСТАВТЕ СЮДИ ВАШ ПАРОЛЬ
       setIsAuthenticated(true);
     } else {
       alert("Невірний пароль!");
