@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 const quizzesData = quizzes;
 
 // ВСТАВТЕ СЮДИ ВАШ URL, ЯКИЙ ВИ ОТРИМАЛИ ВІД GOOGLE APPS SCRIPT
-const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbw6PUVvwyQ_mKJ9AGNSJiTgENenqZp35rPRTwknLuJGkhSLiHEaeWpv4tQ6xEiLvCQi/exec"; 
+const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbzSDN2xZAGsN8YuTWhuynRO5yeJUIOQ_HDhBHFYkrhjzhcIe_X-4jY3gDOWI08_zvZ6/exec"; 
 
 // --- КОМПОНЕНТ 1: САМ ТЕСТ ---
 function Quiz({ data }) {
