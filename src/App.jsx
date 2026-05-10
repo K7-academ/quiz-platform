@@ -52,10 +52,30 @@ function Quiz({ data }) {
   useEffect(() => {
     if (showResult) {
       localStorage.setItem('last_attempt_time', Date.now().toString());
+      
+      // Збереження результатів для адміністратора
+      const results = JSON.parse(localStorage.getItem('test_results') || '[]');
+      const visitorId = localStorage.getItem('visitor_id') || 'Unknown';
+      const percentage = Math.round((score / shuffledQuestions.length) * 100);
+      
+      const resultEntry = {
+        id: Date.now(),
+        date: new Date().toISOString(),
+        visitorId,
+        quizTitle: data.title,
+        score,
+        total: shuffledQuestions.length,
+        percentage,
+        passed: percentage >= 70
+      };
+      
+      results.push(resultEntry);
+      localStorage.setItem('test_results', JSON.stringify(results));
+
       const buttonTimer = setTimeout(() => setShowHomeButton(true), 20000); 
       return () => clearTimeout(buttonTimer);
     }
-  }, [showResult]);
+  }, [showResult, score, shuffledQuestions.length, data.title]);
 
   // ОНОВЛЕНА ЛОГІКА ОБРОБКИ ВІДПОВІДІ
   const handleAnswer = (option) => {
@@ -236,6 +256,9 @@ function Home() {
           </Link>
         ))}
       </div>
+      <div style={{ marginTop: '40px' }}>
+        <Link to="/admin" style={{ color: '#666', textDecoration: 'none', fontSize: '0.8rem' }}>Панель адміністратора</Link>
+      </div>
     </div>
   );
 }
@@ -272,6 +295,67 @@ function QuizPage() {
   return quiz ? <Quiz data={quiz} /> : <h2>Тест не знайдено</h2>;
 }
 
+// --- КОМПОНЕНТ 4: ЗВІТ ДЛЯ АДМІНІСТРАТОРА ---
+function AdminReport() {
+  const [results, setResults] = useState([]);
+
+  useEffect(() => {
+    const saved = JSON.parse(localStorage.getItem('test_results') || '[]');
+    saved.sort((a, b) => b.id - a.id);
+    setResults(saved);
+  }, []);
+
+  const clearResults = () => {
+    if (window.confirm('Ви впевнені, що хочете очистити всі результати?')) {
+      localStorage.removeItem('test_results');
+      setResults([]);
+    }
+  };
+
+  return (
+    <div className="home-section" style={{ width: '90%', maxWidth: '900px', background: 'rgba(26, 26, 26, 0.95)', padding: '30px', borderRadius: '15px' }}>
+      <h2 style={{ marginBottom: '20px' }}>Звіт про результати тестувань (Адміністратор)</h2>
+      <button onClick={clearResults} style={{ background: '#ff4d4d', color: 'white', border: 'none', padding: '10px 15px', borderRadius: '5px', cursor: 'pointer', marginBottom: '20px' }}>Очистити результати</button>
+      
+      {results.length === 0 ? (
+        <p>Немає результатів для відображення.</p>
+      ) : (
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid #444' }}>
+                <th style={{ padding: '10px' }}>Дата</th>
+                <th style={{ padding: '10px' }}>ID Користувача</th>
+                <th style={{ padding: '10px' }}>Тема</th>
+                <th style={{ padding: '10px' }}>Результат</th>
+                <th style={{ padding: '10px' }}>Відсоток</th>
+                <th style={{ padding: '10px' }}>Статус</th>
+              </tr>
+            </thead>
+            <tbody>
+              {results.map((r) => (
+                <tr key={r.id} style={{ borderBottom: '1px solid #333' }}>
+                  <td style={{ padding: '10px' }}>{new Date(r.date).toLocaleString('uk-UA')}</td>
+                  <td style={{ padding: '10px' }} title={r.visitorId}>{r.visitorId.substring(0, 8)}...</td>
+                  <td style={{ padding: '10px' }}>{r.quizTitle}</td>
+                  <td style={{ padding: '10px' }}>{r.score} / {r.total}</td>
+                  <td style={{ padding: '10px' }}>{r.percentage}%</td>
+                  <td style={{ padding: '10px', color: r.passed ? '#4caf50' : '#ff4d4d', fontWeight: 'bold' }}>
+                    {r.passed ? 'Складено' : 'Не складено'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <div style={{ marginTop: '30px' }}>
+        <Link to="/" className="counter">На головну</Link>
+      </div>
+    </div>
+  );
+}
+
 // --- ГОЛОВНИЙ КОМПОНЕНТ ---
 export default function App() {
   useEffect(() => {
@@ -296,6 +380,7 @@ export default function App() {
       }}>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/admin" element={<AdminReport />} />
           <Route path="/:quizId" element={<QuizPage />} />
         </Routes>
       </div>
