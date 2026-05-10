@@ -6,6 +6,9 @@ import { v4 as uuidv4 } from 'uuid';
 
 const quizzesData = quizzes;
 
+// ВСТАВТЕ СЮДИ ВАШ URL, ЯКИЙ ВИ ОТРИМАЛИ ВІД GOOGLE APPS SCRIPT
+const WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbw6PUVvwyQ_mKJ9AGNSJiTgENenqZp35rPRTwknLuJGkhSLiHEaeWpv4tQ6xEiLvCQi/exec"; 
+
 // --- КОМПОНЕНТ 1: САМ ТЕСТ ---
 function Quiz({ data }) {
   const [shuffledQuestions, setShuffledQuestions] = useState([]);
@@ -48,18 +51,17 @@ function Quiz({ data }) {
     return () => clearInterval(timer);
   }, [timeLeft, showResult]);
 
-  // Логіка блокування та появи кнопки
+  // Логіка блокування, збереження результатів та АВТОМАТИЧНОЇ ВІДПРАВКИ
   useEffect(() => {
     if (showResult) {
-      localStorage.setItem('last_attempt_time', Date.now().toString());
+      const now = Date.now();
+      localStorage.setItem('last_attempt_time', now.toString());
       
-      // Збереження результатів для адміністратора
-      const results = JSON.parse(localStorage.getItem('test_results') || '[]');
       const visitorId = localStorage.getItem('visitor_id') || 'Unknown';
       const percentage = Math.round((score / shuffledQuestions.length) * 100);
       
       const resultEntry = {
-        id: Date.now(),
+        id: now,
         date: new Date().toISOString(),
         visitorId,
         quizTitle: data.title,
@@ -68,9 +70,23 @@ function Quiz({ data }) {
         percentage,
         passed: percentage >= 70
       };
-      
-      results.push(resultEntry);
-      localStorage.setItem('test_results', JSON.stringify(results));
+
+      // 1. Зберігаємо локально (про всяк випадок)
+      const localResults = JSON.parse(localStorage.getItem('test_results') || '[]');
+      localResults.push(resultEntry);
+      localStorage.setItem('test_results', JSON.stringify(localResults));
+
+      // 2. АВТОМАТИЧНО ВІДПРАВЛЯЄМО НА СЕРВЕР (Google Script)
+      if (WEBHOOK_URL && WEBHOOK_URL !== "ТУТ_БУДЕ_ВАШ_URL_ВІД_GOOGLE_APPS_SCRIPT") {
+        fetch(WEBHOOK_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({
+            action: "submitResult", // Позначаємо, що це прийшов результат від учня
+            ...resultEntry
+          }),
+        }).catch(err => console.error("Помилка фонової відправки:", err));
+      }
 
       const buttonTimer = setTimeout(() => setShowHomeButton(true), 20000); 
       return () => clearTimeout(buttonTimer);
@@ -256,9 +272,6 @@ function Home() {
           </Link>
         ))}
       </div>
-      <div style={{ marginTop: '40px' }}>
-        <Link to="/admin" style={{ color: '#666', textDecoration: 'none', fontSize: '0.8rem' }}>Панель адміністратора</Link>
-      </div>
     </div>
   );
 }
@@ -298,12 +311,55 @@ function QuizPage() {
 // --- КОМПОНЕНТ 4: ЗВІТ ДЛЯ АДМІНІСТРАТОРА ---
 function AdminReport() {
   const [results, setResults] = useState([]);
+  const [viewMode, setViewMode] = useState('summary'); // 'summary' або 'detailed'
+  const [sendingId, setSendingId] = useState(null);
+  
+  // ЗАХИСТ ПАРОЛЕМ
+  const [password, setPassword] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     const saved = JSON.parse(localStorage.getItem('test_results') || '[]');
     saved.sort((a, b) => b.id - a.id);
     setResults(saved);
   }, []);
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (password === "admin777") { // ВСТАВТЕ СЮДИ ВАШ ПАРОЛЬ
+      setIsAuthenticated(true);
+    } else {
+      alert("Невірний пароль!");
+    }
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="quiz-card" style={{ maxWidth: '400px', padding: '40px', textAlign: 'center' }}>
+        <h2 style={{ marginBottom: '20px' }}>Вхід для адміністратора</h2>
+        <form onSubmit={handleLogin}>
+          <input 
+            type="password" 
+            placeholder="Введіть пароль" 
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            style={{ 
+              width: '100%', 
+              padding: '12px', 
+              marginBottom: '20px', 
+              borderRadius: '8px', 
+              border: '1px solid #444', 
+              background: '#222', 
+              color: 'white',
+              textAlign: 'center'
+            }}
+          />
+          <button type="submit" className="counter" style={{ width: '100%' }}>Увійти</button>
+        </form>
+        <Link to="/" style={{ display: 'block', marginTop: '20px', color: '#666', fontSize: '0.9rem' }}>На головну</Link>
+      </div>
+    );
+  }
 
   const clearResults = () => {
     if (window.confirm('Ви впевнені, що хочете очистити всі результати?')) {
@@ -312,41 +368,165 @@ function AdminReport() {
     }
   };
 
+  // Групування результатів
+  const getSummary = () => {
+    const grouped = {};
+    results.forEach(r => {
+      const dateObj = new Date(r.date);
+      const dateStr = dateObj.toLocaleDateString('uk-UA');
+      
+      const key = `${dateStr}_${r.quizTitle}`;
+      if (!grouped[key]) {
+        grouped[key] = {
+          dateStr: dateStr,
+          topic: r.quizTitle,
+          count: 0,
+          totalPercentage: 0,
+          passCount: 0,
+          details: []
+        };
+      }
+      grouped[key].count += 1;
+      grouped[key].totalPercentage += r.percentage;
+      if (r.passed) grouped[key].passCount += 1;
+      grouped[key].details.push(r);
+    });
+
+    return Object.values(grouped).map(g => ({
+      ...g,
+      avgPercentage: Math.round(g.totalPercentage / g.count)
+    }));
+  };
+
+  const sendWebhookReport = async (group, idx) => {
+    if (!WEBHOOK_URL || WEBHOOK_URL.includes("ТУТ_БУДЕ_ВАШ_URL")) {
+      alert("Будь ласка, спочатку налаштуйте WEBHOOK_URL.");
+      return;
+    }
+
+    setSendingId(idx);
+    // ... решта логіки залишається для ручної відправки за потреби
+    const subject = `Звіт з тестування: ${group.topic} за ${group.dateStr}`;
+    // (Я залишу fetch тут також, щоб ви могли відправити звіт вручну раніше, ніж спрацює авто-таймер)
+    try {
+      const response = await fetch(WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          action: "sendSummary", // Позначаємо, що хочемо негайний звіт по цій темі
+          topic: group.topic,
+          dateStr: group.dateStr
+        }),
+      });
+      if (response.ok) alert("Запит на відправку звіту надіслано!");
+    } catch (error) {
+      alert("Помилка з'єднання.");
+    } finally {
+      setSendingId(null);
+    }
+  };
+
+  const summaryData = getSummary();
+
   return (
     <div className="home-section" style={{ width: '90%', maxWidth: '900px', background: 'rgba(26, 26, 26, 0.95)', padding: '30px', borderRadius: '15px' }}>
       <h2 style={{ marginBottom: '20px' }}>Звіт про результати тестувань (Адміністратор)</h2>
-      <button onClick={clearResults} style={{ background: '#ff4d4d', color: 'white', border: 'none', padding: '10px 15px', borderRadius: '5px', cursor: 'pointer', marginBottom: '20px' }}>Очистити результати</button>
+      
+      <div style={{ marginBottom: '20px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+        <button 
+          onClick={() => setViewMode('summary')}
+          style={{ 
+            background: viewMode === 'summary' ? '#4caf50' : '#444', 
+            color: 'white', border: 'none', padding: '10px 15px', borderRadius: '5px', cursor: 'pointer' 
+          }}
+        >
+          Узагальнена статистика
+        </button>
+        <button 
+          onClick={() => setViewMode('detailed')}
+          style={{ 
+            background: viewMode === 'detailed' ? '#4caf50' : '#444', 
+            color: 'white', border: 'none', padding: '10px 15px', borderRadius: '5px', cursor: 'pointer' 
+          }}
+        >
+          Детальна статистика
+        </button>
+        <div style={{ flex: 1 }}></div>
+        <button onClick={clearResults} style={{ background: '#ff4d4d', color: 'white', border: 'none', padding: '10px 15px', borderRadius: '5px', cursor: 'pointer' }}>
+          Очистити результати
+        </button>
+      </div>
       
       {results.length === 0 ? (
         <p>Немає результатів для відображення.</p>
       ) : (
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid #444' }}>
-                <th style={{ padding: '10px' }}>Дата</th>
-                <th style={{ padding: '10px' }}>ID Користувача</th>
-                <th style={{ padding: '10px' }}>Тема</th>
-                <th style={{ padding: '10px' }}>Результат</th>
-                <th style={{ padding: '10px' }}>Відсоток</th>
-                <th style={{ padding: '10px' }}>Статус</th>
-              </tr>
-            </thead>
-            <tbody>
-              {results.map((r) => (
-                <tr key={r.id} style={{ borderBottom: '1px solid #333' }}>
-                  <td style={{ padding: '10px' }}>{new Date(r.date).toLocaleString('uk-UA')}</td>
-                  <td style={{ padding: '10px' }} title={r.visitorId}>{r.visitorId.substring(0, 8)}...</td>
-                  <td style={{ padding: '10px' }}>{r.quizTitle}</td>
-                  <td style={{ padding: '10px' }}>{r.score} / {r.total}</td>
-                  <td style={{ padding: '10px' }}>{r.percentage}%</td>
-                  <td style={{ padding: '10px', color: r.passed ? '#4caf50' : '#ff4d4d', fontWeight: 'bold' }}>
-                    {r.passed ? 'Складено' : 'Не складено'}
-                  </td>
+          {viewMode === 'summary' ? (
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid #444' }}>
+                  <th style={{ padding: '10px' }}>Дата</th>
+                  <th style={{ padding: '10px' }}>Тема</th>
+                  <th style={{ padding: '10px' }}>Учасників</th>
+                  <th style={{ padding: '10px' }}>Сер. бал</th>
+                  <th style={{ padding: '10px' }}>Успішність</th>
+                  <th style={{ padding: '10px' }}>Дія</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {summaryData.map((g, idx) => (
+                  <tr key={idx} style={{ borderBottom: '1px solid #333' }}>
+                    <td style={{ padding: '10px' }}>{g.dateStr}</td>
+                    <td style={{ padding: '10px' }}>{g.topic}</td>
+                    <td style={{ padding: '10px' }}>{g.count}</td>
+                    <td style={{ padding: '10px' }}>{g.avgPercentage}%</td>
+                    <td style={{ padding: '10px' }}>{g.passCount} з {g.count} ({Math.round((g.passCount / g.count) * 100)}%)</td>
+                    <td style={{ padding: '10px' }}>
+                      <button 
+                        onClick={() => sendWebhookReport(g, idx)}
+                        disabled={sendingId === idx}
+                        style={{ 
+                          background: sendingId === idx ? '#888' : '#2196F3', 
+                          color: 'white', border: 'none', padding: '5px 10px', 
+                          borderRadius: '3px', cursor: sendingId === idx ? 'not-allowed' : 'pointer', 
+                          fontSize: '0.9rem' 
+                        }}
+                      >
+                        {sendingId === idx ? 'Відправляється...' : 'Відправити звіт'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid #444' }}>
+                  <th style={{ padding: '10px' }}>Дата та час</th>
+                  <th style={{ padding: '10px' }}>ID Користувача</th>
+                  <th style={{ padding: '10px' }}>Тема</th>
+                  <th style={{ padding: '10px' }}>Результат</th>
+                  <th style={{ padding: '10px' }}>Відсоток</th>
+                  <th style={{ padding: '10px' }}>Статус</th>
+                </tr>
+              </thead>
+              <tbody>
+                {results.map((r) => (
+                  <tr key={r.id} style={{ borderBottom: '1px solid #333' }}>
+                    <td style={{ padding: '10px' }}>{new Date(r.date).toLocaleString('uk-UA')}</td>
+                    <td style={{ padding: '10px' }} title={r.visitorId}>{r.visitorId.substring(0, 8)}...</td>
+                    <td style={{ padding: '10px' }}>{r.quizTitle}</td>
+                    <td style={{ padding: '10px' }}>{r.score} / {r.total}</td>
+                    <td style={{ padding: '10px' }}>{r.percentage}%</td>
+                    <td style={{ padding: '10px', color: r.passed ? '#4caf50' : '#ff4d4d', fontWeight: 'bold' }}>
+                      {r.passed ? 'Складено' : 'Не складено'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
       <div style={{ marginTop: '30px' }}>
