@@ -140,6 +140,19 @@ function Quiz({ data }) {
         <h2>Результат: {score} з {shuffledQuestions.length}</h2>
         <p>Ваша оцінка: {percentage}%</p>
         <p>{percentage >= 70 ? "✅ Тест складено!" : "❌ Спробуйте ще раз"}</p>
+
+        {/* ВИВІД ID КОРИСТУВАЧА */}
+        <div style={{ 
+          background: 'rgba(255,255,255,0.05)', 
+          padding: '10px', 
+          borderRadius: '8px', 
+          margin: '20px 0',
+          fontSize: '0.85rem',
+          color: '#aaa',
+          border: '1px solid rgba(255,255,255,0.1)'
+        }}>
+          Ваш ID для звіту: <span style={{ color: '#2196F3', fontFamily: 'monospace', wordBreak: 'break-all' }}>{localStorage.getItem('visitor_id')}</span>
+        </div>
         
         {/* БЛОК АНАЛІЗУ ПОМИЛОК */}
         {incorrectAnswers.length > 0 && (
@@ -271,6 +284,22 @@ function Home() {
             {quizzesData[id].title}
           </Link>
         ))}
+      </div>
+
+      {/* ВИВІД ID КОРИСТУВАЧА НА ГОЛОВНІЙ */}
+      <div style={{ 
+        marginTop: '40px', 
+        padding: '15px', 
+        borderTop: '1px solid rgba(255,255,255,0.1)',
+        fontSize: '0.9rem',
+        color: '#888'
+      }}>
+        Ваш персональний ID: <span style={{ color: '#4caf50', fontWeight: 'bold' }}>
+          {localStorage.getItem('visitor_id')?.substring(0, 8)}...
+        </span>
+        <div style={{ fontSize: '0.7rem', marginTop: '5px', opacity: 0.6 }}>
+          (використовується для ідентифікації у звітах)
+        </div>
       </div>
     </div>
   );
