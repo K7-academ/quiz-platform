@@ -33,7 +33,7 @@ function Quiz({ data }) {
 
   useEffect(() => {
     if (data && data.questions) {
-      const randomizedQuestions = shuffleArray(data.questions).map(q => ({
+      const randomizedQuestions = shuffleArray(data.questions).slice(0, 4).map(q => ({
         ...q,
         options: shuffleArray(q.options) 
       }));
