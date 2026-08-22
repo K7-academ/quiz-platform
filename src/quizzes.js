@@ -1,5 +1,5 @@
 export const quizzes = {
-  "1": {
+  "Thz_RTV": {
     title: "Тема 3. Заняття 2.",
     timeLimit: 180, // 3 хвилини на весь тест
 	questions: [
@@ -30,7 +30,7 @@ export const quizzes = {
       }    
 	]
   },
-  "2": {
+  "HTML": {
     title: "Вступ в HTML",
     timeLimit: 180, // 3 хвилини на весь тест
     questions: [
